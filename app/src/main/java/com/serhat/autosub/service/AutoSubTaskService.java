@@ -40,6 +40,7 @@ import com.serhat.autosub.shorts.ShortsProject;
 import com.serhat.autosub.shorts.ShortsProjectStore;
 import com.serhat.autosub.shorts.ShortsTranscriptAnalyzer;
 import com.serhat.autosub.subtitles.SubtitleGenerator;
+import com.serhat.autosub.cortaja.longvod.LongVodCheckpointStore; import com.serhat.autosub.cortaja.longvod.LongVodForegroundRunner;
 import com.serhat.autosub.ui.main.MainActivity;
 
 import java.io.File;
@@ -2028,5 +2029,31 @@ public class AutoSubTaskService extends Service {
             builder.append(entries.get(i).getText());
         }
         return builder.toString();
+    }
+
+    /** Starts bounded yt-dlp/Whisper processing without tying lifetime to the Activity. */
+    public void startLongVodAnalysis(String projectId, String sourceUrl, long durationMs, String resolverVersion) {
+        if (!modelReady) {
+            publishShortsProject(null, "O modelo de voz ainda está preparando. Tente novamente em instantes.");
+            return;
+        }
+        beginForeground(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo", "Preparando blocos de áudio...", 0);
+        File workDir = new File(getCacheDir(), "cortaja-vod-" + projectId);
+        LongVodForegroundRunner runner = new LongVodForegroundRunner(subtitleGenerator, new LongVodCheckpointStore(this));
+        runner.run(projectId, sourceUrl, durationMs, resolverVersion, workDir, new LongVodForegroundRunner.Listener() {
+            public void onProgress(com.serhat.autosub.cortaja.longvod.LongVodBlock block, int completed, int total) {
+                int progress = total == 0 ? 100 : (completed * 100 / total);
+                publishState(new AutoSubTaskState(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo",
+                        "Bloco " + completed + " de " + total, progress, -1, null, "", "", false, false, queuedDownloadIds()));
+            }
+            public void onComplete(List<SubtitleGenerator.SubtitleEntry> entries) {
+                QueueItem item = new QueueItem(Uri.parse(sourceUrl), "VOD analisado");
+                item.setStatus(QueueItem.Status.COMPLETED); item.setSubtitles(entries); item.setProgress(100);
+                item.setMessage("Transcrição concluída em blocos"); item.setId(queueStore.addItem(item));
+                publishQueueItems();
+                analyzeShorts(item, 5, 15, 60, "Melhores momentos", false, false);
+            }
+            public void onError(String message) { publishShortsProject(null, message); publishIdleStateIfNoWork(); }
+        });
     }
 }

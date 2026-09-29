@@ -2738,4 +2738,10 @@ public class MainViewModel extends AndroidViewModel {
         if (videoUri == null) return;
         exportStore.deleteExportsForVideo(videoUri.toString());
     }
+
+    public void startLongVodAnalysis(String sourceUrl, long durationMs, String resolverVersion) {
+        if (sourceUrl == null || sourceUrl.trim().isEmpty() || durationMs <= 0) return;
+        String projectId = "link-" + Long.toHexString(sourceUrl.hashCode() & 0xffffffffL);
+        runWhenTaskServiceReady(true, () -> taskService.startLongVodAnalysis(projectId, sourceUrl, durationMs, resolverVersion));
+    }
 }

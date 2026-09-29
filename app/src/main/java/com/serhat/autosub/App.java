@@ -1,6 +1,7 @@
 package com.serhat.autosub;
 
 import com.serhat.autosub.core.NotificationHelper;
+import com.serhat.autosub.cortaja.source.YtDlpRuntime;
 
 import android.app.Application;
 import android.app.Activity;
@@ -20,6 +21,7 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        YtDlpRuntime.initializeAsync(this);
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
 
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
