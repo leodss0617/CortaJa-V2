@@ -28,6 +28,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # setup-android@v3 defaults to the removed legacy "tools" package.
+          # Keep only the package needed before the explicit SDK installation.
+          packages: platform-tools
 
       - name: Install Android toolchain
         shell: bash

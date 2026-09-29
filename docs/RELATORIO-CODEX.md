@@ -45,6 +45,13 @@ O build oficial passa a ser feito por [`.github/workflows/build-android.yml`](..
 
 A configuração mantém prioridade `arm64-v8a` e também preserva `armeabi-v7a`, `x86` e `x86_64` conforme a base.
 
+### Ciclo autônomo de CI
+
+- Run `36503729013`: falhou em `Set up Android SDK`.
+- Causa raiz: `android-actions/setup-android@v3` usou o padrão `packages: tools platform-tools`; o runner atual não fornece mais o pacote legado `tools`, e `sdkmanager tools` terminou com `Failed to find package 'tools'`.
+- Correção aplicada: limitar o setup inicial a `packages: platform-tools`; plataformas, Build Tools, NDK e CMake continuam sendo instalados explicitamente no passo seguinte.
+- Commit da correção: será registrado após a validação e publicação desta alteração.
+
 ## Build/APK
 
 O build remoto foi preparado; a execução do APK depende do GitHub Actions deste repositório. Localmente, `assembleDebug` foi tentado três vezes. O build Java/recursos passa, mas o link nativo Whisper falha neste ambiente ARM64 porque o NDK instalado contém toolchain host x86_64 e o fallback Clang do Termux não possui os runtimes Android do NDK (`crtbegin_dynamic.o`, `libatomic`, `libunwind`, `libclang_rt.builtins.a`). Portanto o APK solicitado ainda não foi gerado, copiado nem hasheado.
