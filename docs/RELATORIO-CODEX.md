@@ -50,7 +50,10 @@ A configuração mantém prioridade `arm64-v8a` e também preserva `armeabi-v7a`
 - Run `36503729013`: falhou em `Set up Android SDK`.
 - Causa raiz: `android-actions/setup-android@v3` usou o padrão `packages: tools platform-tools`; o runner atual não fornece mais o pacote legado `tools`, e `sdkmanager tools` terminou com `Failed to find package 'tools'`.
 - Correção aplicada: limitar o setup inicial a `packages: platform-tools`; plataformas, Build Tools, NDK e CMake continuam sendo instalados explicitamente no passo seguinte.
-- Commit da correção: será registrado após a validação e publicação desta alteração.
+- Commit da correção: `3f6e73c`.
+- Run `36504899493`: SDK, NDK, CMake e testes unitários passaram; falhou em `Compile Android instrumentation tests`.
+- Causa raiz: `compileDebugAndroidTest` é ambígua no Gradle 8.13 e não seleciona uma tarefa única.
+- Correção seguinte: usar a tarefa agregadora explícita `:app:compileDebugAndroidTestSources`.
 
 ## Build/APK
 

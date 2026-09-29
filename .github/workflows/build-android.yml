@@ -55,7 +55,7 @@ jobs:
         run: ./gradlew testDebugUnitTest --no-daemon --stacktrace --console=plain
 
       - name: Compile Android instrumentation tests
-        run: ./gradlew compileDebugAndroidTest --no-daemon --stacktrace --console=plain
+        run: ./gradlew :app:compileDebugAndroidTestSources --no-daemon --stacktrace --console=plain
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace --console=plain
