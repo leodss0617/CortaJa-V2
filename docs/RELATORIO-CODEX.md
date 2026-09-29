@@ -64,3 +64,5 @@ BUILD SUCCESSFUL
 - Testes novos: durações 5min/30min/1h/3h/6h/10h, clamp de bloco, resume, dedup/ranking global e retry do resolvedor yt-dlp.
 - Licença: youtubedl-android GPL-3.0; obrigações e links registrados em `docs/NOTICE-YTDLP-ANDROID.md`.
 - Smoke externo de URLs públicas não foi convertido em teste determinístico: plataformas podem exigir disponibilidade regional, rate limit ou conteúdo público específico.
+- Remote build 36623518553: PASS (unit tests, instrumentation compilation, assemble debug).
+- Artifact final: `/storage/emulated/0/Download/CortaJa-V2-10H.apk`, 173717744 bytes, SHA256 `8c13be6431b19ad0e56edf1ace92e23db95d839b37461e13a306538a77ce308d`.
