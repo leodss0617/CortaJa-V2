@@ -1,0 +1,27 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/models/build/
+auto-subtitle-generator.jks
+/remixicons
+/ai-gallery_context_codebase
+# Runtime AI models and generated build metadata (never commit multi-GB files)
+*.litertlm
+*.litertlm.part
+*.gguf
+*.ggml
+**/models/*.bin
+!app/src/main/assets/models/ggml-base.en-q5_1.bin
+/build-info.txt

@@ -1,0 +1,105 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Build CortaJá V2
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android toolchain
+        shell: bash
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;35.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1"
+          yes | sdkmanager --licenses >/dev/null || true
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon --stacktrace --console=plain
+
+      - name: Compile Android instrumentation tests
+        run: ./gradlew compileDebugAndroidTest --no-daemon --stacktrace --console=plain
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --console=plain
+
+      - name: Collect APK and build info
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t apks < <(find app/build/outputs/apk -type f -name '*.apk' -print | sort)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "assembleDebug completed without producing an APK" >&2
+            exit 1
+          fi
+
+          primary=""
+          for apk in "${apks[@]}"; do
+            if [[ "$apk" == *arm64-v8a* ]]; then
+              primary="$apk"
+              break
+            fi
+          done
+          if [ -z "$primary" ]; then
+            primary="${apks[0]}"
+          fi
+
+          mkdir -p artifact
+          cp "${apks[@]}" artifact/
+          sha256sum "$primary" | awk '{print $1}' > artifact/sha256.txt
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "apk_path=${primary}"
+            echo "apk_size_bytes=$(stat -c '%s' "$primary")"
+            echo "sha256=$(cat artifact/sha256.txt)"
+            echo "ndk=27.0.12077973"
+            echo "cmake=3.22.1"
+            echo "jdk=$(java -version 2>&1 | head -1)"
+            echo "gradle=$(./gradlew --version | awk '/Gradle / {print $2; exit}')"
+            echo "agp=8.13.2"
+            echo "target_abis=arm64-v8a,armeabi-v7a,x86,x86_64"
+          } > artifact/build-info.txt
+          echo "Primary APK: ${primary}"
+          cat artifact/build-info.txt
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CortaJa-V2-TESTE
+          path: artifact/*
+          if-no-files-found: error
+          retention-days: 14
