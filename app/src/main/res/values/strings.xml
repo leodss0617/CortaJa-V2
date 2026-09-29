@@ -1,3 +1,11 @@
 <resources>
-    <string name="app_name">AutoSub</string>
+    <string name="app_name">CortaJá</string>
+    <string name="cortaja_tagline">Transforme vídeos longos nos melhores momentos.</string>
+    <string name="nav_inicio">Início</string><string name="nav_projetos">Projetos</string>
+    <string name="nav_meus_cortes">Meus Cortes</string><string name="nav_configuracoes">Configurações</string>
+    <string name="novo_projeto">Novo projeto</string><string name="novo_projeto_cta">+ NOVO PROJETO</string>
+    <string name="arquivo_local">Arquivo local</string><string name="arquivo_local_subtitle">MP4 / MKV</string>
+    <string name="youtube">YouTube</string><string name="youtube_subtitle">Cole um link público</string>
+    <string name="ia_local">IA local</string><string name="whisper">Whisper</string><string name="gemma">Gemma</string>
+    <string name="projetos_recentes">Projetos recentes</string>
 </resources>

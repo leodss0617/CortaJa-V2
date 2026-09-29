@@ -73,15 +73,15 @@ public class ShortsCandidateAdapter extends RecyclerView.Adapter<ShortsCandidate
             preview = view.findViewById(R.id.candidatePreviewBT);
             renderStatus = view.findViewById(R.id.candidateRenderStatusTV);
             layer.setAdapter(new ArrayAdapter<>(view.getContext(), android.R.layout.simple_spinner_dropdown_item,
-                    new String[]{"Original", "Translation", "Both"}));
+                    new String[]{"Original", "Tradução", "Ambas"}));
         }
 
         void bind(ShortsCandidate item) {
             title.setText(item.getTitle());
-            score.setText(item.getScore() + "/100");
+            score.setText(String.format(Locale.forLanguageTag("pt-BR"), "Nota: %.1f/10", item.getScore() / 10f));
             score.setVisibility(phraseMontage ? View.GONE : View.VISIBLE);
             time.setText(format(item.getStartMs()) + " – " + format(item.getEndMs()) +
-                    " • " + String.format(Locale.US, "%.1fs", item.getDurationMs() / 1000f));
+                    " • " + String.format(Locale.forLanguageTag("pt-BR"), "%.0fs", item.getDurationMs() / 1000f));
             reason.setText(item.getHook().isEmpty() ? item.getReason() : item.getHook() + "\n" + item.getReason());
             selected.setOnCheckedChangeListener(null);
             selected.setChecked(item.isSelected());

@@ -79,7 +79,7 @@
             android:layout_width="match_parent"
             android:layout_height="44dp"
             android:layout_marginTop="8dp"
-            android:text="Auto frame speaker" />
+            android:text="Enquadrar automaticamente" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/removeSilenceSwitch"
@@ -93,7 +93,7 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="10dp"
-            android:text="Export selected"
+            android:text="EXPORTAR CORTES"
             app:icon="@drawable/ri_export_line" />
     </LinearLayout>
 

@@ -190,12 +190,12 @@ public class ShortsReviewFragment extends Fragment {
             });
             binding.exportSelectedBT.setText(project.isPhraseMontage()
                     ? "Merge selected"
-                    : "Export selected");
+                    : "EXPORTAR CORTES");
             androidx.appcompat.app.ActionBar bar =
                     ((androidx.appcompat.app.AppCompatActivity) requireActivity()).getSupportActionBar();
             if (bar != null) bar.setTitle(project.isPhraseMontage()
                     ? "Phrase Montage Review"
-                    : "Shorts Review");
+                    : "Melhores cortes");
             adapter.submit(project.getCandidates());
             if (current == null && !project.getCandidates().isEmpty()) preview(project.getCandidates().get(0));
         });
@@ -272,7 +272,7 @@ public class ShortsReviewFragment extends Fragment {
         binding.shortsProgress.setVisibility(View.VISIBLE);
         binding.shortsProgress.setIndeterminate(false);
         binding.shortsProgress.setProgress(0);
-        binding.cropHintTV.setText("Finding the active speaker…");
+        binding.cropHintTV.setText("Encontrando a pessoa em destaque…");
         framingExecutor.execute(() -> {
             try {
                 List<ShortsCropKeyframe> keyframes = new ShortsAutoFramer(appContext)
@@ -312,10 +312,10 @@ public class ShortsReviewFragment extends Fragment {
         binding.autoFrameBT.setEnabled(current != null && !framingRunning);
         if (current != null && current.hasAutoFraming()) {
             binding.autoFrameBT.setText("Re-run auto framing");
-            binding.cropHintTV.setText("Following the likely active speaker • drag slider for manual framing");
+            binding.cropHintTV.setText("Acompanhando a pessoa em destaque • arraste para ajustar");
             binding.cropSlider.setEnabled(!framingRunning);
         } else {
-            binding.autoFrameBT.setText("Auto frame speaker");
+            binding.autoFrameBT.setText("Enquadrar automaticamente");
             binding.cropSlider.setEnabled(current != null && !framingRunning);
         }
     }
@@ -342,14 +342,14 @@ public class ShortsReviewFragment extends Fragment {
         EditText end = decimalField("End seconds", candidate.getEndMs() / 1000d);
         content.addView(start); content.addView(end);
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Edit clip boundaries")
+                .setTitle("Editar limites do corte")
                 .setMessage(project != null && project.isPhraseMontage()
                         ? "Adjust this occurrence precisely. Selected occurrences are merged in timeline order."
                         : "Boundaries snap to the nearest subtitle. Duration must remain " +
                         project.getMinDurationSeconds() + "–" + project.getMaxDurationSeconds() + " seconds.")
                 .setView(content)
                 .setPositiveButton("Apply", (dialog, which) -> applyRange(candidate, start, end))
-                .setNegativeButton("Cancel", null).show();
+                .setNegativeButton("Cancelar", null).show();
     }
 
     private EditText decimalField(String hint, double value) {
