@@ -55,3 +55,4 @@ BUILD SUCCESSFUL
 - YouTube Player público sem autenticação; Twitch Usher público; Kick API/playback HLS público.
 - Smoke: YouTube oEmbed 200 e Player WEB 200/streamingData; Kick API 200/playback_url; Twitch Usher 403 no canal/ID testado, tratado como bloqueio público recuperável.
 - Segurança: sem DRM bypass, CAPTCHA, cookies, login ou anti-bot bypass. Testes cobrem YouTube watch/short/live, Twitch VOD/live, Kick VOD/live e URL inválida.
+- LINKS artifact run 36608150790: /storage/emulated/0/Download/CortaJa-V2-LINKS.apk, 175477573 bytes, SHA256 c8ccb5bd783535c9cc3c76190695744ddfd3e01bf0b8492ddda38ce38a55fd4c.
