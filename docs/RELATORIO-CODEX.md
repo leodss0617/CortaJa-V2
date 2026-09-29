@@ -49,3 +49,9 @@ BUILD SUCCESSFUL
 
 - O download real de VOD YouTube ainda requer o downloader já previsto na base; nesta camada a URL é validada sem quebrar o fluxo local.
 - Não há dispositivo Android conectado nesta sessão para executar o teste instrumentado.
+## Fluxo automático de links — 2026-09-29
+- PublicVideoSourceResolver com YouTubeProvider, TwitchProvider e KickProvider; entrada única para vídeo, VOD e live.
+- Mídia resolvida entra no mesmo addVideosToQueue → Whisper → Shorts/Gemma/fallback → resultados do arquivo local.
+- YouTube Player público sem autenticação; Twitch Usher público; Kick API/playback HLS público.
+- Smoke: YouTube oEmbed 200 e Player WEB 200/streamingData; Kick API 200/playback_url; Twitch Usher 403 no canal/ID testado, tratado como bloqueio público recuperável.
+- Segurança: sem DRM bypass, CAPTCHA, cookies, login ou anti-bot bypass. Testes cobrem YouTube watch/short/live, Twitch VOD/live, Kick VOD/live e URL inválida.
