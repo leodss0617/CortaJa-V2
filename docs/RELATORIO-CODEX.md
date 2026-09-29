@@ -43,7 +43,7 @@ BUILD SUCCESSFUL
 
 - Build local de recursos/Java passa com AAPT2 ARM64; a suíte JVM passou.
 - O APK final ainda depende do workflow remoto por causa das bibliotecas nativas do Whisper no ambiente Termux ARM64.
-- Artifact, APK, SHA256 e tamanho serão registrados após o run remoto passar.
+- Artifact: CortaJa-V2-TESTE; APK: /storage/emulated/0/Download/CortaJa-V2-PTBR.apk; tamanho: 175461189 bytes; SHA256: 4f91bd536c10483523cacc82cbbf7d37aeaf09c21091de320bb9d854a2e800e6.
 
 ## Bloqueios
 
