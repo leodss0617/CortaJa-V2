@@ -82,7 +82,9 @@ jobs:
           fi
 
           mkdir -p artifact
-          cp "${apks[@]}" artifact/
+          # Publish only the ARM64 APK; it is the required target and keeps the
+          # CI artifact practical to download on the deployment device.
+          cp "$primary" artifact/
           sha256sum "$primary" | awk '{print $1}' > artifact/sha256.txt
           {
             echo "commit=${GITHUB_SHA}"

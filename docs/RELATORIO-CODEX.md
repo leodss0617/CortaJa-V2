@@ -54,6 +54,7 @@ A configuração mantém prioridade `arm64-v8a` e também preserva `armeabi-v7a`
 - Run `36504899493`: SDK, NDK, CMake e testes unitários passaram; falhou em `Compile Android instrumentation tests`.
 - Causa raiz: `compileDebugAndroidTest` é ambígua no Gradle 8.13 e não seleciona uma tarefa única.
 - Correção seguinte: usar a tarefa agregadora explícita `:app:compileDebugAndroidTestSources`.
+- O run bem-sucedido gerou os quatro APKs ABI e o artifact ficou com 454228644 bytes; para manter prioridade ARM64 e permitir o download automático, o artifact seguinte publicará somente o APK `arm64-v8a`.
 
 ## Build/APK
 
