@@ -56,6 +56,17 @@ A configuração mantém prioridade `arm64-v8a` e também preserva `armeabi-v7a`
 - Correção seguinte: usar a tarefa agregadora explícita `:app:compileDebugAndroidTestSources`.
 - O run bem-sucedido gerou os quatro APKs ABI e o artifact ficou com 454228644 bytes; para manter prioridade ARM64 e permitir o download automático, o artifact seguinte publicará somente o APK `arm64-v8a`.
 
+### Resultado final do build remoto
+
+- Runs: `36503729013` (SDK falhou), `36504899493` (tarefa Android test ambígua), `36505252181` (SUCCESS, quatro APKs) e `36507186622` (SUCCESS, artifact ARM64).
+- Commits: `3f6e73c` (`build: fix android sdk setup`), `cf11e7c` (`build: target android test sources explicitly`) e `c2ff208` (`build: publish arm64 apk artifact`).
+- `ubuntu-latest`, JDK 17, compile/target SDK 36, NDK `27.0.12077973`, CMake `3.22.1`.
+- Unit tests: PASS (`testDebugUnitTest`). Android test compile: PASS (`:app:compileDebugAndroidTestSources`). Assemble debug: PASS.
+- Artifact: `CortaJa-V2-TESTE`, run `36507186622`, 116670249 bytes.
+- APK: `/storage/emulated/0/Download/CortaJa-V2-TESTE.apk`.
+- APK size: `175455109` bytes.
+- APK SHA-256: `d72b69b5d395cb4257604ac3436273abc84d21f78afdfdb9c2fd83b03ec672f3`.
+
 ## Build/APK
 
 O build remoto foi preparado; a execução do APK depende do GitHub Actions deste repositório. Localmente, `assembleDebug` foi tentado três vezes. O build Java/recursos passa, mas o link nativo Whisper falha neste ambiente ARM64 porque o NDK instalado contém toolchain host x86_64 e o fallback Clang do Termux não possui os runtimes Android do NDK (`crtbegin_dynamic.o`, `libatomic`, `libunwind`, `libclang_rt.builtins.a`). Portanto o APK solicitado ainda não foi gerado, copiado nem hasheado.
