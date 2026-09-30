@@ -71,3 +71,4 @@ BUILD SUCCESSFUL
 - Correção: Home observa modelReady/modelStatusText/generalStatusText; o modelo selecionado é inicializado automaticamente; pedidos LongVod ficam pendentes e são consumidos uma vez após onModelInitialized; falhas limpam a pendência e publicam erro explícito.
 - AnalysisFragment agora dá prioridade a shortsError e só mostra sucesso com ShortsProject contendo candidatos válidos; estados MODEL_LOAD, SUBTITLE_GENERATION, GEMMA_MODEL_LOAD e SHORTS_ANALYSIS alimentam o status real.
 - Verificação local: `testDebugUnitTest` e `compileDebugAndroidTestSources` passaram.
+- Runtime-fix remote build 36657768315: PASS; artifact `/storage/emulated/0/Download/CortaJa-V2-RUNTIME-FIX.apk`, 173719840 bytes, SHA256 `8c49623cf64147c7ec248417cca26664cd0fd75dc9fab900b7a61f578f329522`.
