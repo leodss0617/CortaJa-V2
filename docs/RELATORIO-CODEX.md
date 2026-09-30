@@ -93,3 +93,5 @@ BUILD SUCCESSFUL
 - Estado visual persistido: `LongVodJobStore` registra sessão, etapa, bloco, progresso e última atividade; Home e AnalysisFragment exibem o estado recebido pelo serviço.
 - Testes: 56 testes unitários PASS, incluindo guard de idle, codec de transcrição, retomada sem duplicação e cenário fake de VOD de 30 minutos; compilação de fontes Android instrumentadas PASS.
 - Limitação explícita: teste em aparelho real com HOME/tela apagada e VOD público continua `MANUAL_REQUIRED`; não foi simulado como PASS.
+- Remote build `36701083006`: PASS; artifact `CortaJa-V2-TESTE`, APK `/storage/emulated/0/Download/CortaJa-V2-REAL-PROGRESS.apk`, 173732044 bytes, SHA256 `680e693472571560d92aed7a9370b0b531c63e83b367e5a43d9dde808deec43c`.
+- O artifact foi gerado a partir do commit `6c01200` (`fix: persist long vod sessions and expose real analysis progress`).
