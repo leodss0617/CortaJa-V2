@@ -26,6 +26,7 @@ public final class LongVodForegroundRunner {
             List<SubtitleGenerator.SubtitleEntry> all = new ArrayList<>();
             try {
                 List<LongVodBlock> blocks = new LongVodPlanner(15).plan(durationMs);
+                if (blocks.isEmpty()) { listener.onError("Não foi possível determinar a duração deste VOD."); return; }
                 LongVodCheckpoint checkpoint = checkpoints.latest(projectId);
                 int first = new LongVodPlanner(15).nextBlockIndex(blocks, checkpoint);
                 if (!workDir.exists() && !workDir.mkdirs()) throw new IllegalStateException("Não foi possível preparar o armazenamento temporário");

@@ -12,6 +12,7 @@ public class LongVodPlannerTest {
     @Test public void createsExpectedBlocksForSupportedDurations() {
         LongVodPlanner planner = new LongVodPlanner(15);
         assertEquals(1, planner.plan(5 * 60_000L).size());
+        assertEquals(2, planner.plan(17 * 60_000L).size());
         assertEquals(2, planner.plan(30 * 60_000L).size());
         assertEquals(4, planner.plan(60 * 60_000L).size());
         assertEquals(12, planner.plan(3 * 60 * 60_000L).size());

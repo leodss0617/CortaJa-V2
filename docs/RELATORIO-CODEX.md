@@ -72,3 +72,9 @@ BUILD SUCCESSFUL
 - AnalysisFragment agora dá prioridade a shortsError e só mostra sucesso com ShortsProject contendo candidatos válidos; estados MODEL_LOAD, SUBTITLE_GENERATION, GEMMA_MODEL_LOAD e SHORTS_ANALYSIS alimentam o status real.
 - Verificação local: `testDebugUnitTest` e `compileDebugAndroidTestSources` passaram.
 - Runtime-fix remote build 36657768315: PASS; artifact `/storage/emulated/0/Download/CortaJa-V2-RUNTIME-FIX.apk`, 173719840 bytes, SHA256 `8c49623cf64147c7ec248417cca26664cd0fd75dc9fab900b7a61f578f329522`.
+## Correção de roteamento de mídia pública — 2026-09-30
+- Causa: vídeos públicos abaixo de 20 minutos eram enviados como URL HTTP para `addVideosToQueue`, cujo FFmpeg esperava SAF/arquivo local.
+- Correção: todo VOD público com `durationMs > 0` usa `PUBLIC_YTDLP` e `LongVodForegroundRunner`, inclusive 5, 17 e 30 minutos; o planner produz 1, 2 e 2 blocos respectivamente com janela de 15 minutos.
+- `content://`/`file://` permanecem em `LOCAL_FILE`; HTTP/HTTPS nunca entram no pipeline local; lives remotas são reconhecidas e recusadas explicitamente enquanto não houver pipeline incremental de live.
+- Diagnóstico registra provider, sourceId, duração, presença de URLs e rota escolhida sem query/token; falhas exibem a mensagem real do QueueItem.
+- Testes: política YouTube/Twitch/Kick VOD, local content/file, live remota e planner 5/17/30 minutos/10 horas.
