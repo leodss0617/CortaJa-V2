@@ -292,6 +292,7 @@ public class MainViewModel extends AndroidViewModel {
 
         bindTaskService();
         loadCatalog();
+        initializeSelectedModel();
         loadQueueItemsFromDb();
         startRamUsagePolling();
         gemmaInstalled.setValue(gemmaModelManager.isInstalled());
@@ -325,11 +326,13 @@ public class MainViewModel extends AndroidViewModel {
     private void applyTaskState(AutoSubTaskState state) {
         if (state == null) return;
         queueRunning.setValue(state.isQueueRunning());
-        shortsAnalyzing.setValue(state.getTaskType() == AutoSubTaskState.TaskType.SHORTS_ANALYSIS
-                || state.getTaskType() == AutoSubTaskState.TaskType.GEMMA_MODEL_LOAD);
-        if (state.getTaskType() == AutoSubTaskState.TaskType.SHORTS_ANALYSIS
-                || state.getTaskType() == AutoSubTaskState.TaskType.GEMMA_MODEL_LOAD) {
-            generalStatusText.setValue(state.getMessage());
+        boolean pipeline = state.getTaskType() == AutoSubTaskState.TaskType.MODEL_LOAD
+                || state.getTaskType() == AutoSubTaskState.TaskType.SUBTITLE_GENERATION
+                || state.getTaskType() == AutoSubTaskState.TaskType.SHORTS_ANALYSIS
+                || state.getTaskType() == AutoSubTaskState.TaskType.GEMMA_MODEL_LOAD;
+        shortsAnalyzing.setValue(pipeline);
+        if (pipeline || state.getTaskType() == AutoSubTaskState.TaskType.NONE) {
+            generalStatusText.setValue(state.getMessage() == null ? "" : state.getMessage());
         }
         activeDownloadModelId.setValue(state.getActiveDownloadModelId());
         if (state.getTaskType() == AutoSubTaskState.TaskType.MODEL_DOWNLOAD) {
@@ -2741,6 +2744,10 @@ public class MainViewModel extends AndroidViewModel {
 
     public void startLongVodAnalysis(String sourceUrl, long durationMs, String resolverVersion) {
         if (sourceUrl == null || sourceUrl.trim().isEmpty() || durationMs <= 0) return;
+        shortsError.setValue("");
+        shortsProject.setValue(null);
+        shortsAnalyzing.setValue(true);
+        generalStatusText.setValue("Preparando análise...");
         String projectId = "link-" + Long.toHexString(sourceUrl.hashCode() & 0xffffffffL);
         runWhenTaskServiceReady(true, () -> taskService.startLongVodAnalysis(projectId, sourceUrl, durationMs, resolverVersion));
     }

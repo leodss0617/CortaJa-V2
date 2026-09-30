@@ -41,6 +41,7 @@ import com.serhat.autosub.shorts.ShortsProjectStore;
 import com.serhat.autosub.shorts.ShortsTranscriptAnalyzer;
 import com.serhat.autosub.subtitles.SubtitleGenerator;
 import com.serhat.autosub.cortaja.longvod.LongVodCheckpointStore; import com.serhat.autosub.cortaja.longvod.LongVodForegroundRunner;
+import com.serhat.autosub.cortaja.state.LongVodPendingRequest;
 import com.serhat.autosub.ui.main.MainActivity;
 
 import java.io.File;
@@ -119,6 +120,7 @@ public class AutoSubTaskService extends Service {
 
     private boolean modelReady;
     private boolean modelLoading;
+    private LongVodPendingRequest pendingLongVodAnalysis;
     private boolean startedForWork;
     private VoskModelInfo selectedModelInfo;
     private String modelStatusText = "";
@@ -277,6 +279,7 @@ public class AutoSubTaskService extends Service {
                     publishModelState();
                     publishIdleStateIfNoWork();
                     startQueue();
+                    consumePendingLongVodAnalysis();
                 });
             }
 
@@ -287,6 +290,10 @@ public class AutoSubTaskService extends Service {
                     modelLoading = false;
                     modelStatusText = "Model error";
                     generalStatusText = "Error initializing model: " + errorMessage;
+                    if (pendingLongVodAnalysis != null) {
+                        pendingLongVodAnalysis = null;
+                        publishShortsProject(null, "Não foi possível iniciar o modelo de voz: " + errorMessage);
+                    }
                     publishModelState();
                     publishIdleStateIfNoWork();
                 });
@@ -2032,11 +2039,27 @@ public class AutoSubTaskService extends Service {
     }
 
     /** Starts bounded yt-dlp/Whisper processing without tying lifetime to the Activity. */
+
+    /** Queues a long analysis while Whisper is loading instead of asking the user to retry. */
     public void startLongVodAnalysis(String projectId, String sourceUrl, long durationMs, String resolverVersion) {
         if (!modelReady) {
-            publishShortsProject(null, "O modelo de voz ainda está preparando. Tente novamente em instantes.");
+            pendingLongVodAnalysis = new LongVodPendingRequest(projectId, sourceUrl, durationMs, resolverVersion);
+            generalStatusText = "Preparando modelo de voz...";
+            publishModelState();
+            if (!modelLoading) initializeSelectedModel(false);
             return;
         }
+        startLongVodAnalysisReady(projectId, sourceUrl, durationMs, resolverVersion);
+    }
+
+    private void consumePendingLongVodAnalysis() {
+        if (!modelReady || pendingLongVodAnalysis == null) return;
+        LongVodPendingRequest request = pendingLongVodAnalysis;
+        pendingLongVodAnalysis = null;
+        startLongVodAnalysisReady(request.projectId, request.sourceUrl, request.durationMs, request.resolverVersion);
+    }
+
+    private void startLongVodAnalysisReady(String projectId, String sourceUrl, long durationMs, String resolverVersion) {
         beginForeground(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo", "Preparando blocos de áudio...", 0);
         File workDir = new File(getCacheDir(), "cortaja-vod-" + projectId);
         LongVodForegroundRunner runner = new LongVodForegroundRunner(subtitleGenerator, new LongVodCheckpointStore(this));

@@ -66,3 +66,8 @@ BUILD SUCCESSFUL
 - Smoke externo de URLs públicas não foi convertido em teste determinístico: plataformas podem exigir disponibilidade regional, rate limit ou conteúdo público específico.
 - Remote build 36623518553: PASS (unit tests, instrumentation compilation, assemble debug).
 - Artifact final: `/storage/emulated/0/Download/CortaJa-V2-10H.apk`, 173717744 bytes, SHA256 `8c13be6431b19ad0e56edf1ace92e23db95d839b37461e13a306538a77ce308d`.
+## Correção de prontidão do Whisper — 2026-09-29
+- Causa real: HomeFragment exibia `Whisper • Pronto` fixo, MainViewModel não inicializava o modelo no construtor, LongVod abortava enquanto modelReady era falso e AnalysisFragment interpretava shortsAnalyzing=false como sucesso.
+- Correção: Home observa modelReady/modelStatusText/generalStatusText; o modelo selecionado é inicializado automaticamente; pedidos LongVod ficam pendentes e são consumidos uma vez após onModelInitialized; falhas limpam a pendência e publicam erro explícito.
+- AnalysisFragment agora dá prioridade a shortsError e só mostra sucesso com ShortsProject contendo candidatos válidos; estados MODEL_LOAD, SUBTITLE_GENERATION, GEMMA_MODEL_LOAD e SHORTS_ANALYSIS alimentam o status real.
+- Verificação local: `testDebugUnitTest` e `compileDebugAndroidTestSources` passaram.
