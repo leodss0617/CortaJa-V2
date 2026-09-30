@@ -35,6 +35,10 @@ public class YtDlpSourceResolverTest {
     private static final class FakeClient implements YtDlpClient {
         boolean failFirst; boolean failNightly; int calls; int updates;
         FakeClient(boolean failFirst, boolean failNightly) { this.failFirst = failFirst; this.failNightly = failNightly; }
+        public YtDlpMetadata getInfo(String url, String playerClient) {
+            if (failFirst && calls++ < 3) throw new RuntimeException("extractor error");
+            return new YtDlpMetadata("id", "youtube", "Título público", "Canal", "thumb", 7_200_000, false, "https://video", "https://audio", "https://manifest");
+        }
         public YtDlpMetadata getInfo(String url) {
             if (failFirst && calls++ == 0) throw new RuntimeException("extractor error");
             return new YtDlpMetadata("id", "youtube", "Título público", "Canal", "thumb",

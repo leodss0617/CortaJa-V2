@@ -79,3 +79,10 @@ BUILD SUCCESSFUL
 - Diagnóstico registra provider, sourceId, duração, presença de URLs e rota escolhida sem query/token; falhas exibem a mensagem real do QueueItem.
 - Testes: política YouTube/Twitch/Kick VOD, local content/file, live remota e planner 5/17/30 minutos/10 horas.
 - Public-media-fix remote build 36659828649: PASS; artifact `/storage/emulated/0/Download/CortaJa-V2-PUBLIC-MEDIA-FIX.apk`, 173721608 bytes, SHA256 `d6dcd1d9b181a8270efda30e71a145d9bb79ec75809cd206ff901dd535622a77`.
+## Robustez yt-dlp e segundo plano — 2026-09-30
+- Causa do 403: o APK dependia do binário yt-dlp embarcado antigo e usava apenas `bestaudio/best`, sem atualização periódica nem estratégias alternativas.
+- Correção yt-dlp: `YtDlpRuntimeManager` inicializa, verifica versão, atualiza Stable/Nightly no primeiro uso ou após 24h e registra canal/timestamp/estado.
+- Resolução/download: clientes normal, `android_vr`, `web_safari` e re-resolução após update; blocos têm retry limitado para 403, Forbidden, SABR, assinatura e formatos indisponíveis.
+- Cada bloco usa a fonte original, valida WAV/PCM não vazio e não promove URL assinada temporária a fonte persistente.
+- Segundo plano: `runWhenTaskServiceReady(true, ...)` chama `ContextCompat.startForegroundService` com ação explícita antes do bind; o serviço persiste o trabalho LongVod e recupera após `START_STICKY`/intent nulo.
+- Verificação local: `testDebugUnitTest` (53 testes) e `compileDebugAndroidTestSources` passaram.

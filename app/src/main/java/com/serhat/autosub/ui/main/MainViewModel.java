@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.core.content.ContextCompat;
 
 import com.serhat.autosub.R;
 import com.serhat.autosub.core.ApplicationPath;
@@ -308,6 +309,10 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     private void runWhenTaskServiceReady(boolean foregroundWork, Runnable action) {
+        if (foregroundWork) {
+            Intent foregroundIntent = new Intent(getApplication(), AutoSubTaskService.class).setAction(AutoSubTaskService.ACTION_START_MEDIA_SERVICE);
+            ContextCompat.startForegroundService(getApplication(), foregroundIntent);
+        }
         Runnable serviceAction = () -> {
             action.run();
         };

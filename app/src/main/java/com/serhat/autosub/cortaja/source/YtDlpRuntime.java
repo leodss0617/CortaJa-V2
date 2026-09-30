@@ -17,15 +17,15 @@ public final class YtDlpRuntime {
         Context app = context.getApplicationContext();
         EXECUTOR.execute(() -> {
             try {
-                AndroidYtDlpClient.initialize(app);
+                YtDlpRuntimeManager.prepare(app);
                 initialized = true;
-                Log.i(TAG, "yt-dlp inicializado: " + new AndroidYtDlpClient(app).version());
+                Log.i(TAG, "yt-dlp inicializado: " + YtDlpRuntimeManager.version(app));
             } catch (Exception e) {
                 Log.w(TAG, "yt-dlp não foi inicializado; o diagnóstico exibirá o erro", e);
             }
         });
     }
 
-    public static synchronized void initializeBlocking(Context context) throws Exception { if (!initialized) { AndroidYtDlpClient.initialize(context.getApplicationContext()); initialized = true; } }
+    public static synchronized void initializeBlocking(Context context) throws Exception { YtDlpRuntimeManager.prepare(context); initialized = true; }
     public static boolean isInitialized() { return initialized; }
 }

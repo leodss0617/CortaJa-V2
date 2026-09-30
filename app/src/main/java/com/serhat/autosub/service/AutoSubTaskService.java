@@ -40,7 +40,7 @@ import com.serhat.autosub.shorts.ShortsProject;
 import com.serhat.autosub.shorts.ShortsProjectStore;
 import com.serhat.autosub.shorts.ShortsTranscriptAnalyzer;
 import com.serhat.autosub.subtitles.SubtitleGenerator;
-import com.serhat.autosub.cortaja.longvod.LongVodCheckpointStore; import com.serhat.autosub.cortaja.longvod.LongVodForegroundRunner;
+import com.serhat.autosub.cortaja.longvod.LongVodCheckpointStore; import com.serhat.autosub.cortaja.longvod.LongVodForegroundRunner; import com.serhat.autosub.cortaja.longvod.LongVodWorkStore;
 import com.serhat.autosub.cortaja.state.LongVodPendingRequest;
 import com.serhat.autosub.ui.main.MainActivity;
 
@@ -66,6 +66,7 @@ public class AutoSubTaskService extends Service {
     }
 
     public static final String ACTION_CANCEL_MEDIA = "com.serhat.autosub.CANCEL_MEDIA";
+    public static final String ACTION_START_MEDIA_SERVICE = "com.serhat.autosub.START_MEDIA_SERVICE";
     public static final String ACTION_PAUSE_DOWNLOAD = "com.serhat.autosub.PAUSE_DOWNLOAD";
     public static final String ACTION_RESUME_DOWNLOAD = "com.serhat.autosub.RESUME_DOWNLOAD";
     public static final String ACTION_CANCEL_DOWNLOAD = "com.serhat.autosub.CANCEL_DOWNLOAD";
@@ -121,6 +122,7 @@ public class AutoSubTaskService extends Service {
     private boolean modelReady;
     private boolean modelLoading;
     private LongVodPendingRequest pendingLongVodAnalysis;
+    private LongVodWorkStore longVodWorkStore;
     private boolean startedForWork;
     private VoskModelInfo selectedModelInfo;
     private String modelStatusText = "";
@@ -149,6 +151,7 @@ public class AutoSubTaskService extends Service {
         exportStore = new ExportStore(this);
         gemmaModelManager = new GemmaModelManager(this);
         shortsProjectStore = new ShortsProjectStore(this);
+        longVodWorkStore = new LongVodWorkStore(this);
         if (!gemmaModelManager.isInstalled() && gemmaModelManager.getPartialFile().length() > 0) {
             gemmaDownloadPaused = true;
             gemmaDownloadProgress = (int) Math.min(99,
@@ -172,6 +175,14 @@ public class AutoSubTaskService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
+        if (ACTION_START_MEDIA_SERVICE.equals(action) || intent == null) {
+            LongVodPendingRequest recovered = longVodWorkStore.load();
+            if (recovered != null) pendingLongVodAnalysis = recovered;
+            startedForWork = true;
+            publishState(new AutoSubTaskState(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "CortaJá", "Preparando análise...", -1, -1, null, "", "", false, false, queuedDownloadIds()));
+            if (recovered != null && !modelReady && !modelLoading) initializeSelectedModel(false);
+        }
+
         if (ACTION_CANCEL_MEDIA.equals(action)) {
             cancelCurrentQueueItem();
             cancelMediaWork();
@@ -292,6 +303,7 @@ public class AutoSubTaskService extends Service {
                     generalStatusText = "Error initializing model: " + errorMessage;
                     if (pendingLongVodAnalysis != null) {
                         pendingLongVodAnalysis = null;
+                        longVodWorkStore.clear();
                         publishShortsProject(null, "Não foi possível iniciar o modelo de voz: " + errorMessage);
                     }
                     publishModelState();
@@ -2042,6 +2054,7 @@ public class AutoSubTaskService extends Service {
 
     /** Queues a long analysis while Whisper is loading instead of asking the user to retry. */
     public void startLongVodAnalysis(String projectId, String sourceUrl, long durationMs, String resolverVersion) {
+        longVodWorkStore.save(new LongVodPendingRequest(projectId, sourceUrl, durationMs, resolverVersion));
         if (!modelReady) {
             pendingLongVodAnalysis = new LongVodPendingRequest(projectId, sourceUrl, durationMs, resolverVersion);
             generalStatusText = "Preparando modelo de voz...";
@@ -2062,7 +2075,7 @@ public class AutoSubTaskService extends Service {
     private void startLongVodAnalysisReady(String projectId, String sourceUrl, long durationMs, String resolverVersion) {
         beginForeground(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo", "Preparando blocos de áudio...", 0);
         File workDir = new File(getCacheDir(), "cortaja-vod-" + projectId);
-        LongVodForegroundRunner runner = new LongVodForegroundRunner(subtitleGenerator, new LongVodCheckpointStore(this));
+        LongVodForegroundRunner runner = new LongVodForegroundRunner(subtitleGenerator, new LongVodCheckpointStore(this), this);
         runner.run(projectId, sourceUrl, durationMs, resolverVersion, workDir, new LongVodForegroundRunner.Listener() {
             public void onProgress(com.serhat.autosub.cortaja.longvod.LongVodBlock block, int completed, int total) {
                 int progress = total == 0 ? 100 : (completed * 100 / total);
@@ -2073,10 +2086,11 @@ public class AutoSubTaskService extends Service {
                 QueueItem item = new QueueItem(Uri.parse(sourceUrl), "VOD analisado");
                 item.setStatus(QueueItem.Status.COMPLETED); item.setSubtitles(entries); item.setProgress(100);
                 item.setMessage("Transcrição concluída em blocos"); item.setId(queueStore.addItem(item));
+                longVodWorkStore.clear();
                 publishQueueItems();
                 analyzeShorts(item, 5, 15, 60, "Melhores momentos", false, false);
             }
-            public void onError(String message) { publishShortsProject(null, message); publishIdleStateIfNoWork(); }
+            public void onError(String message) { longVodWorkStore.clear(); publishShortsProject(null, message); publishIdleStateIfNoWork(); }
         });
     }
 }

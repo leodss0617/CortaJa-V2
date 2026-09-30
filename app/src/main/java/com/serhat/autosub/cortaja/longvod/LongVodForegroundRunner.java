@@ -1,6 +1,7 @@
 package com.serhat.autosub.cortaja.longvod;
 
 import android.net.Uri;
+import android.content.Context;
 
 import com.serhat.autosub.cortaja.source.YtDlpSectionDownloader;
 import com.serhat.autosub.subtitles.SubtitleGenerator;
@@ -15,10 +16,12 @@ public final class LongVodForegroundRunner {
     public interface Listener { void onProgress(LongVodBlock block, int completed, int total); void onComplete(List<SubtitleGenerator.SubtitleEntry> entries); void onError(String message); }
     private final SubtitleGenerator generator;
     private final LongVodCheckpointStore checkpoints;
-    private final YtDlpSectionDownloader downloader = new YtDlpSectionDownloader();
+    private final YtDlpSectionDownloader downloader;
 
-    public LongVodForegroundRunner(SubtitleGenerator generator, LongVodCheckpointStore checkpoints) {
-        this.generator = generator; this.checkpoints = checkpoints;
+    public LongVodForegroundRunner(SubtitleGenerator generator, LongVodCheckpointStore checkpoints) { this(generator, checkpoints, null); }
+
+    public LongVodForegroundRunner(SubtitleGenerator generator, LongVodCheckpointStore checkpoints, Context context) {
+        this.generator = generator; this.checkpoints = checkpoints; this.downloader = new YtDlpSectionDownloader(context);
     }
 
     public void run(String projectId, String sourceUrl, long durationMs, String resolverVersion, File workDir, Listener listener) {
