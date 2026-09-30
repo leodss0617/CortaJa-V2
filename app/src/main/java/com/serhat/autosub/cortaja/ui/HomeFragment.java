@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.serhat.autosub.ui.main.MainActivity;
 import com.serhat.autosub.ui.main.MainViewModel;
+import com.serhat.autosub.service.AutoSubTaskState;
 
 public class HomeFragment extends Fragment {
     @Nullable @Override public View onCreateView(@NonNull android.view.LayoutInflater i,
@@ -40,6 +41,7 @@ public class HomeFragment extends Fragment {
         root.addView(newProject);
         root.addView(text("IA LOCAL", 14));
         TextView whisper = text("Whisper • Preparando...", 16);
+        TextView activeJob = text("", 16); root.addView(activeJob);
         root.addView(whisper);
         root.addView(text("Gemma • será usada quando compatível; fallback local disponível", 16));
         root.addView(text("PROJETOS RECENTES", 14));
@@ -55,6 +57,7 @@ public class HomeFragment extends Fragment {
                     : error ? "Whisper • Erro" : "Whisper • Preparando...");
         };
         vm.getModelReady().observe(getViewLifecycleOwner(), value -> updateWhisper.run());
+        vm.getCurrentTaskState().observe(getViewLifecycleOwner(), state -> { if (state != null && state.getTaskType() == AutoSubTaskState.TaskType.SUBTITLE_GENERATION) activeJob.setText("ANÁLISE EM ANDAMENTO\n" + state.getMessage() + "\n" + state.getProgress() + "%\n[ ABRIR ANÁLISE ]"); else activeJob.setText(""); });
         vm.getModelStatusText().observe(getViewLifecycleOwner(), value -> updateWhisper.run());
         vm.getGeneralStatusText().observe(getViewLifecycleOwner(), value -> updateWhisper.run());
         updateWhisper.run();

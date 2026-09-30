@@ -40,7 +40,7 @@ import com.serhat.autosub.shorts.ShortsProject;
 import com.serhat.autosub.shorts.ShortsProjectStore;
 import com.serhat.autosub.shorts.ShortsTranscriptAnalyzer;
 import com.serhat.autosub.subtitles.SubtitleGenerator;
-import com.serhat.autosub.cortaja.longvod.LongVodCheckpointStore; import com.serhat.autosub.cortaja.longvod.LongVodForegroundRunner; import com.serhat.autosub.cortaja.longvod.LongVodWorkStore;
+import com.serhat.autosub.cortaja.longvod.LongVodCheckpointStore; import com.serhat.autosub.cortaja.longvod.LongVodForegroundRunner; import com.serhat.autosub.cortaja.longvod.LongVodWorkStore; import com.serhat.autosub.cortaja.longvod.LongVodJobStore; import com.serhat.autosub.cortaja.longvod.LongVodJobState; import com.serhat.autosub.cortaja.longvod.LongVodStage;
 import com.serhat.autosub.cortaja.state.LongVodPendingRequest;
 import com.serhat.autosub.ui.main.MainActivity;
 
@@ -123,6 +123,15 @@ public class AutoSubTaskService extends Service {
     private boolean modelLoading;
     private LongVodPendingRequest pendingLongVodAnalysis;
     private LongVodWorkStore longVodWorkStore;
+    private LongVodJobStore longVodJobStore;
+    private volatile boolean longVodRunning;
+    private LongVodForegroundRunner activeLongVodRunner;
+    private String activeLongVodProjectId = "";
+    private String activeLongVodSource = "";
+    private int currentLongVodBlock;
+    private int totalLongVodBlocks;
+    private long activeLongVodDurationMs;
+    private String activeLongVodResolverVersion = "";
     private boolean startedForWork;
     private VoskModelInfo selectedModelInfo;
     private String modelStatusText = "";
@@ -152,6 +161,7 @@ public class AutoSubTaskService extends Service {
         gemmaModelManager = new GemmaModelManager(this);
         shortsProjectStore = new ShortsProjectStore(this);
         longVodWorkStore = new LongVodWorkStore(this);
+        longVodJobStore = new LongVodJobStore(this);
         if (!gemmaModelManager.isInstalled() && gemmaModelManager.getPartialFile().length() > 0) {
             gemmaDownloadPaused = true;
             gemmaDownloadProgress = (int) Math.min(99,
@@ -180,7 +190,7 @@ public class AutoSubTaskService extends Service {
             if (recovered != null) pendingLongVodAnalysis = recovered;
             startedForWork = true;
             publishState(new AutoSubTaskState(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "CortaJá", "Preparando análise...", -1, -1, null, "", "", false, false, queuedDownloadIds()));
-            if (recovered != null && !modelReady && !modelLoading) initializeSelectedModel(false);
+            if (recovered != null) { if (!modelReady && !modelLoading) initializeSelectedModel(false); else if (modelReady) consumePendingLongVodAnalysis(); }
         }
 
         if (ACTION_CANCEL_MEDIA.equals(action)) {
@@ -288,9 +298,9 @@ public class AutoSubTaskService extends Service {
                     updateSelectedModelViews(modelManager.getSelectedModel());
                     generalStatusText = "Ready. Choose a video to generate subtitles.";
                     publishModelState();
-                    publishIdleStateIfNoWork();
+                    if (pendingLongVodAnalysis != null) { consumePendingLongVodAnalysis(); return; }
                     startQueue();
-                    consumePendingLongVodAnalysis();
+                    publishIdleStateIfNoWork();
                 });
             }
 
@@ -318,7 +328,7 @@ public class AutoSubTaskService extends Service {
     }
 
     private boolean isMediaWorkActive() {
-        return queueRunning || batchRunning || isMediaTask(currentState.getTaskType());
+        return longVodRunning || queueRunning || batchRunning || isMediaTask(currentState.getTaskType());
     }
 
     public void startModelDownload(VoskModelInfo modelInfo) {
@@ -963,6 +973,7 @@ public class AutoSubTaskService extends Service {
     }
 
     public void cancelMediaWork() {
+        if (longVodRunning && activeLongVodRunner != null) { activeLongVodRunner.cancel(); longVodRunning = false; longVodWorkStore.clear(); if (longVodJobStore != null) longVodJobStore.clear(); }
         subtitleGenerator.cancelGeneration();
         if (activeShortsEngine != null) activeShortsEngine.cancel();
         if (currentState.getTaskType() == AutoSubTaskState.TaskType.SHORTS_EXPORT) shortsExportCancelRequested = true;
@@ -1645,7 +1656,7 @@ public class AutoSubTaskService extends Service {
                                  int progress, long activeQueueItemId) {
         if (!startedForWork) {
             startedForWork = true;
-            startService(new Intent(this, AutoSubTaskService.class));
+            ContextCompat.startForegroundService(this, new Intent(this, AutoSubTaskService.class).setAction(ACTION_START_MEDIA_SERVICE));
         }
         publishState(new AutoSubTaskState(taskType, title, message, progress, activeQueueItemId, activeDownloadModelId,
                 activeDownloadSpeedText, activeDownloadEtaText, activeDownloadPaused, queueRunning,
@@ -1705,6 +1716,7 @@ public class AutoSubTaskService extends Service {
     }
 
     private void publishIdleStateIfNoWork() {
+        if (LongVodJobState.preventsIdle(longVodRunning)) return;
         if (!queueRunning && !batchRunning) {
             clearMediaNotificationLane();
         }
@@ -1712,7 +1724,7 @@ public class AutoSubTaskService extends Service {
             clearDownloadNotificationLane();
         }
         if (queueRunning || batchRunning || activeDownloadTask != null || activeGemmaDownloadTask != null
-                || modelLoading || shortsAnalyzing) {
+                || modelLoading || shortsAnalyzing || longVodRunning) {
             return;
         }
         publishState(AutoSubTaskState.idle(false, queuedDownloadIds()));
@@ -1834,7 +1846,7 @@ public class AutoSubTaskService extends Service {
     }
 
     private boolean isMediaLaneActive() {
-        return queueRunning || batchRunning || isMediaTask(currentState.getTaskType());
+        return longVodRunning || queueRunning || batchRunning || isMediaTask(currentState.getTaskType());
     }
 
     private void updateMediaWakeLock() {
@@ -1933,7 +1945,7 @@ public class AutoSubTaskService extends Service {
 
     private void stopForegroundAndMaybeSelf() {
         if (currentState.getTaskType() != AutoSubTaskState.TaskType.NONE || queueRunning || batchRunning
-                || activeDownloadTask != null || activeGemmaDownloadTask != null || modelLoading || shortsAnalyzing) {
+                || activeDownloadTask != null || activeGemmaDownloadTask != null || modelLoading || shortsAnalyzing || longVodRunning) {
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -2073,24 +2085,36 @@ public class AutoSubTaskService extends Service {
     }
 
     private void startLongVodAnalysisReady(String projectId, String sourceUrl, long durationMs, String resolverVersion) {
+        longVodRunning = true; activeLongVodProjectId = projectId; activeLongVodSource = sourceUrl; activeLongVodDurationMs = durationMs; activeLongVodResolverVersion = resolverVersion == null ? "" : resolverVersion; currentLongVodBlock = 0; totalLongVodBlocks = 0;
+        longVodJobStore.save(new LongVodJobState(projectId, sourceUrl, "", "VOD", durationMs, LongVodJobState.Status.RUNNING, LongVodStage.PREPARING_BLOCK, 0, 0, 0, 0, 0, 0, 0, System.currentTimeMillis(), resolverVersion, "Preparando blocos de áudio...", ""));
         beginForeground(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo", "Preparando blocos de áudio...", 0);
         File workDir = new File(getCacheDir(), "cortaja-vod-" + projectId);
-        LongVodForegroundRunner runner = new LongVodForegroundRunner(subtitleGenerator, new LongVodCheckpointStore(this), this);
-        runner.run(projectId, sourceUrl, durationMs, resolverVersion, workDir, new LongVodForegroundRunner.Listener() {
-            public void onProgress(com.serhat.autosub.cortaja.longvod.LongVodBlock block, int completed, int total) {
-                int progress = total == 0 ? 100 : (completed * 100 / total);
-                publishState(new AutoSubTaskState(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo",
-                        "Bloco " + completed + " de " + total, progress, -1, null, "", "", false, false, queuedDownloadIds()));
+        activeLongVodRunner = new LongVodForegroundRunner(subtitleGenerator, new LongVodCheckpointStore(this), this);
+        activeLongVodRunner.run(projectId, sourceUrl, durationMs, resolverVersion, workDir, new LongVodForegroundRunner.Listener() {
+            public void onProgress(com.serhat.autosub.cortaja.longvod.LongVodBlock block, int completed, int total) { currentLongVodBlock = completed; totalLongVodBlocks = total; }
+            public void onStage(LongVodStage stage, int blockIndex, int total, int blockProgress, int overall, String message) {
+                currentLongVodBlock = blockIndex; totalLongVodBlocks = total;
+                publishLongVodStage(stage, blockIndex, total, blockProgress, overall, message);
+            }
+            public void onWhisperProgress(int progress) {
+                publishState(new AutoSubTaskState(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo", "Transcrevendo bloco " + (currentLongVodBlock + 1) + " de " + totalLongVodBlocks + " • " + Math.max(0, progress) + "%", progress, -1, null, "", "", false, false, queuedDownloadIds()));
             }
             public void onComplete(List<SubtitleGenerator.SubtitleEntry> entries) {
-                QueueItem item = new QueueItem(Uri.parse(sourceUrl), "VOD analisado");
-                item.setStatus(QueueItem.Status.COMPLETED); item.setSubtitles(entries); item.setProgress(100);
-                item.setMessage("Transcrição concluída em blocos"); item.setId(queueStore.addItem(item));
-                longVodWorkStore.clear();
-                publishQueueItems();
-                analyzeShorts(item, 5, 15, 60, "Melhores momentos", false, false);
+                longVodRunning = false; activeLongVodRunner = null;
+                longVodJobStore.save(new LongVodJobState(projectId, sourceUrl, "", "VOD", durationMs, LongVodJobState.Status.ANALYZING, LongVodStage.RANKING, totalLongVodBlocks, totalLongVodBlocks, 100, 100, durationMs, entries == null ? 0 : entries.size(), 0, System.currentTimeMillis(), resolverVersion, "Classificando cortes", ""));
+                QueueItem item = new QueueItem(Uri.parse(sourceUrl), "VOD analisado"); item.setStatus(QueueItem.Status.COMPLETED); item.setSubtitles(entries); item.setProgress(100); item.setMessage("Transcrição concluída em blocos"); item.setId(queueStore.addItem(item));
+                longVodWorkStore.clear(); publishQueueItems(); analyzeShorts(item, 5, 15, 60, "Melhores momentos", false, false);
             }
-            public void onError(String message) { longVodWorkStore.clear(); publishShortsProject(null, message); publishIdleStateIfNoWork(); }
+            public void onError(String message) {
+                longVodRunning = false; activeLongVodRunner = null; longVodJobStore.save(new LongVodJobState(projectId, sourceUrl, "", "VOD", durationMs, LongVodJobState.Status.FAILED, LongVodStage.FAILED, currentLongVodBlock, totalLongVodBlocks, 0, 0, 0, 0, 0, System.currentTimeMillis(), resolverVersion, "Falha na análise", message));
+                longVodWorkStore.clear(); publishShortsProject(null, message); publishIdleStateIfNoWork();
+            }
         });
+    }
+
+    private void publishLongVodStage(LongVodStage stage, int block, int total, int blockProgress, int overall, String message) {
+        String text = message == null ? "Processando" : message;
+        publishState(new AutoSubTaskState(AutoSubTaskState.TaskType.SUBTITLE_GENERATION, "Analisando vídeo", text, overall, -1, null, "", "", false, false, queuedDownloadIds()));
+        if (longVodJobStore != null && !activeLongVodProjectId.isEmpty()) longVodJobStore.save(new LongVodJobState(activeLongVodProjectId, activeLongVodSource, "", "VOD", activeLongVodDurationMs, LongVodJobState.Status.RUNNING, stage, block, total, blockProgress, overall, 0, 0, 0, System.currentTimeMillis(), activeLongVodResolverVersion, text, ""));
     }
 }

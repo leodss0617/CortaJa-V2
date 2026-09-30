@@ -100,6 +100,7 @@ public class MainViewModel extends AndroidViewModel {
     private final MutableLiveData<VoskModelInfo> selectedModelInfo = new MutableLiveData<>();
     private final MutableLiveData<String> modelStatusText = new MutableLiveData<>("");
     private final MutableLiveData<String> generalStatusText = new MutableLiveData<>("Loading speech model...");
+    private final MutableLiveData<AutoSubTaskState> currentTaskState = new MutableLiveData<>();
     private final MutableLiveData<List<VoskModelInfo>> catalogModels = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<String> activeDownloadModelId = new MutableLiveData<>(null);
     private final MutableLiveData<Integer> activeDownloadProgress = new MutableLiveData<>(0);
@@ -331,6 +332,7 @@ public class MainViewModel extends AndroidViewModel {
     private void applyTaskState(AutoSubTaskState state) {
         if (state == null) return;
         queueRunning.setValue(state.isQueueRunning());
+        currentTaskState.setValue(state);
         boolean pipeline = state.getTaskType() == AutoSubTaskState.TaskType.MODEL_LOAD
                 || state.getTaskType() == AutoSubTaskState.TaskType.SUBTITLE_GENERATION
                 || state.getTaskType() == AutoSubTaskState.TaskType.SHORTS_ANALYSIS
@@ -408,6 +410,7 @@ public class MainViewModel extends AndroidViewModel {
     public LiveData<VoskModelInfo> getSelectedModelInfo() { return selectedModelInfo; }
     public LiveData<String> getModelStatusText() { return modelStatusText; }
     public LiveData<String> getGeneralStatusText() { return generalStatusText; }
+    public LiveData<AutoSubTaskState> getCurrentTaskState() { return currentTaskState; }
     public LiveData<List<VoskModelInfo>> getCatalogModels() { return catalogModels; }
     public LiveData<String> getActiveDownloadModelId() { return activeDownloadModelId; }
     public LiveData<Integer> getActiveDownloadProgress() { return activeDownloadProgress; }

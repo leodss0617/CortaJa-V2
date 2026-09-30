@@ -88,3 +88,8 @@ BUILD SUCCESSFUL
 - Verificação local: `testDebugUnitTest` (53 testes) e `compileDebugAndroidTestSources` passaram.
 - Remote build `36662060396`: PASS; artifact `CortaJa-V2-TESTE`, APK final `/storage/emulated/0/Download/CortaJa-V2-BACKGROUND-YOUTUBE-FIX.apk`, 173725308 bytes, SHA256 `0eeeabfab67c5a9c7b5004303f0553931b110b809df1e2d2ecd7cadd9af52a37`.
 - O APK foi gerado a partir do commit `7953ffd` (`fix: harden youtube extraction and persistent background analysis`).
+- Progresso real: `LongVodStage` (preparação, download, validação, transcrição, persistência, análise e ranking) é emitido por bloco; progresso do callback do Whisper chega à notificação/UI.
+- Retomada: `long_vod_transcripts` persiste cada bloco em transação antes do checkpoint; o runner recarrega transcrições anteriores e recomeça no próximo bloco, mantendo a URL original.
+- Estado visual persistido: `LongVodJobStore` registra sessão, etapa, bloco, progresso e última atividade; Home e AnalysisFragment exibem o estado recebido pelo serviço.
+- Testes: 56 testes unitários PASS, incluindo guard de idle, codec de transcrição, retomada sem duplicação e cenário fake de VOD de 30 minutos; compilação de fontes Android instrumentadas PASS.
+- Limitação explícita: teste em aparelho real com HOME/tela apagada e VOD público continua `MANUAL_REQUIRED`; não foi simulado como PASS.
